@@ -12,14 +12,15 @@ public class Creator : MonoBehaviour
     private Color[] _pixels;
     private bool[] _occupied;
     private Color _currentColor = Color.yellow;
-
+    private bool _scanLeftToRight = true;
+    
     private int BrushRadius
     {
         get => brushRadius;
         set
         {
             brushRadius = Mathf.Clamp(value, 1, 5);
-            Debug.Log($"Brush radius set to: {brushRadius}"); // Verify value changes
+            Debug.Log($"Brush radius set to: {brushRadius}");
         }
     }
     
@@ -55,10 +56,15 @@ public class Creator : MonoBehaviour
     {
         System.Array.Clear(_occupied, 0, _occupied.Length);
         Color[] newPixels = (Color[])_pixels.Clone();
-
+        //Fuck performance ig? wtf is this shit
+        
         for (int y = 0; y < height; y++)
         {
-            for (int x = 0; x < width; x++)
+            int startX = _scanLeftToRight ? 0 : width - 1;
+            int endX = _scanLeftToRight ? width : 0;
+            int stepX = _scanLeftToRight ? 1: -1;
+            
+            for (int x = startX; x != endX; x += stepX)
             {
                 int index = y * width + x;
                 if (_pixels[index] != Color.yellow) continue;
@@ -66,14 +72,16 @@ public class Creator : MonoBehaviour
                 int targetY = y - 1;
                 if (targetY < 0) continue;
 
+                //always tries to move the sand even if 5billion previous iterations proves there is nowhere to move
+                //I ain't fixing this shit?
                 int targetIndex = targetY * width + x;
                 if (TryMoveSand(newPixels, x, y, x, targetY, index, targetIndex)) continue;
                 if (x > 0 && TryMoveSand(newPixels, x, y, x - 1, targetY, index, targetIndex - 1)) continue;
-                if (x < width - 1 && TryMoveSand(newPixels, x, y, x + 1, targetY, index, targetIndex + 1));
+                if (x < width - 1 && TryMoveSand(newPixels, x, y, x + 1, targetY, index, targetIndex + 1)) continue;
             }
+            _scanLeftToRight = !_scanLeftToRight;
         }
         
-        Debug.Log(newPixels.Length + " " + (width * height));
         if (newPixels.Length != width * height)
         {
             Debug.LogError($"Pixel array size mismatch: Expected {width * height}, but got {newPixels.Length}");
